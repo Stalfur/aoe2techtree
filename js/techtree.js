@@ -74,10 +74,7 @@ const UNIQUE_UNIT = 'UNIQUE UNIT';
 const ELITE_UNIQUE_UNIT = 'ELITE UNIQUE UNIT';
 const UNIQUE_TECH_1 = 'UNIQUE TECH 1';
 const UNIQUE_TECH_2 = 'UNIQUE TECH 2';
-const MONK_PREFIX_MESO = 'meso_';
-const MONK_PREFIX_AFRICAN = 'african_';
-const MONK_PREFIX_ASIAN = 'asian_';
-const MONK_PREFIX_GENERIC = '';
+const MONK_SUFFIX_GENERIC = '_33';
 const BARRACKS = 12;
 const DOCK = 45;
 const SIEGE_WORKSHOP = 49;
@@ -111,6 +108,8 @@ const FEITORIA = 1021;
 const HARBOR = 1189;
 const KREPOST = 1251;
 const DONJON = 1665;
+const FORTIFIED_CHURCH = 1806;
+const MULE_CART = 1808;
 const ARCHER = 4;
 const HAND_CANNONEER = 5;
 const ELITE_SKIRMISHER = 6;
@@ -257,6 +256,7 @@ const KONNIK_2 = 1254;
 const ELITE_KONNIK_2 = 1255;
 const BATTERING_RAM = 1258;
 const FLAMING_CAMEL = 1263;
+const DRAGON_FIRE_SHIP = 1302;
 const STEPPE_LANCER = 1370;
 const ELITE_STEPPE_LANCER = 1372;
 const XOLOTL_WARRIOR = 1570;
@@ -286,6 +286,26 @@ const DPIKEMAN = 1787;
 const DHALBERDIER = 1788;
 const LEGIONARY = 1793;
 const DROMON = 1795;
+const WARRIOR_PRIEST = 1811;
+const SAVAR = 1813;
+const PASTURE = 1889;
+const FIRE_LANCER = 1901;
+const ELITE_FIRE_LANCER = 1903;
+const ROCKET_CART = 1904;
+const HEAVY_ROCKET_CART = 1907;
+const GRENADIER = 1911;
+const MOUNTED_TREBUCHET = 1923;
+const TRACTION_TREBUCHET = 1942;
+const HEI_GUANG_CAVALRY = 1944;
+const HEAVY_HEI_GUANG_CAVALRY = 1946;
+const LOU_CHUAN = 1948;
+const XIANBEI_RAIDER = 1952;
+const CAO_CAO = 1954;
+const WAR_CHARIOT = 1962;
+const LIU_BEI = 1966;
+const JIAN_SWORDSMAN = 1974;
+const SUN_JIAN = 1978;
+
 const YEOMEN = 3;
 const EL_DORADO = 4;
 const FUROR_CELTICA = 5;
@@ -307,6 +327,7 @@ const COINAGE = 23;
 const GARLAND_WARS = 24;
 const HUSBANDRY = 39;
 const FAITH = 45;
+const DEVOTION = 46;
 const CHEMISTRY = 47;
 const CARAVAN = 48;
 const BERSERKERGANG = 49;
@@ -436,6 +457,9 @@ const FLEMISH_REVOLUTION = 755;
 const FIRST_CRUSADE = 756;
 const SCUTAGE = 757;
 const GAMBESONS = 875;
+const DOMESTICATION = 1014;
+const PASTORALISM = 1013;
+const TRANSHUMANCE = 1012;
 
 const BUILDING_INDEX = [
     ARCHERY_RANGE,
@@ -622,26 +646,28 @@ function checkIdUnique(tree) {
 }
 
 function enable(buildings, units, techs) {
-    for (let name of buildings) {
-        SVG('#building_' + formatId(name) + '_x').attr({'opacity': 0});
-        SVG('#building_' + formatId(name) + '_disabled_gray').attr({'opacity': 0});
+    for (let item of buildings) {
+        SVG('#building_' + formatId(item.id) + '_x').attr({'opacity': 0});
+        SVG('#building_' + formatId(item.id) + '_disabled_gray').attr({'opacity': 0});
     }
-    for (let name of units) {
-        SVG('#unit_' + formatId(name) + '_x').attr({'opacity': 0});
-        SVG('#unit_' + formatId(name) + '_disabled_gray').attr({'opacity': 0});
+    for (let item of units) {
+        SVG('#unit_' + formatId(item.id) + '_x').attr({'opacity': 0});
+        SVG('#unit_' + formatId(item.id) + '_disabled_gray').attr({'opacity': 0});
     }
-    for (let name of techs) {
-        SVG('#tech_' + formatId(name) + '_x').attr({'opacity': 0});
-        SVG('#tech_' + formatId(name) + '_disabled_gray').attr({'opacity': 0});
+    for (let item of techs) {
+        SVG('#tech_' + formatId(item.id) + '_x').attr({'opacity': 0});
+        SVG('#tech_' + formatId(item.id) + '_disabled_gray').attr({'opacity': 0});
     }
 }
 
 function applySelectedCiv(selectedCiv) {
-    enable(selectedCiv.buildings, [...selectedCiv.units, UNIQUE_UNIT, ELITE_UNIQUE_UNIT], [...selectedCiv.techs, UNIQUE_TECH_1, UNIQUE_TECH_2]);
+    enable(selectedCiv.buildings,
+        [...selectedCiv.units, {id:UNIQUE_UNIT, age: 3}, {id: ELITE_UNIQUE_UNIT, age: 4}],
+        [...selectedCiv.techs, {id: UNIQUE_TECH_1, age: 3}, {id: UNIQUE_TECH_2, age: 4}]);
     unique([selectedCiv.unique.castleAgeUniqueUnit,
         selectedCiv.unique.imperialAgeUniqueUnit,
         selectedCiv.unique.castleAgeUniqueTech,
-        selectedCiv.unique.imperialAgeUniqueTech], selectedCiv.monkPrefix);
+        selectedCiv.unique.imperialAgeUniqueTech], selectedCiv.monkSuffix);
 }
 
 function formatName(originalname) {
@@ -676,9 +702,9 @@ function formatName(originalname) {
     return items.join('\n');
 }
 
-function unique(ids, monk_prefix) {
-    if (monk_prefix === undefined) {
-        monk_prefix = MONK_PREFIX_GENERIC;
+function unique(ids, monk_suffix) {
+    if (monk_suffix === undefined) {
+        monk_suffix = MONK_SUFFIX_GENERIC;
     }
     SVG('#unit_' + formatId(UNIQUE_UNIT) + '_text').text(formatName(data.strings[data.data.units[ids[0]].LanguageNameId]));
     SVG('#unit_' + formatId(UNIQUE_UNIT) + '_overlay').data({'name': data.strings[data.data.units[ids[0]].LanguageNameId], 'id':'unit_'+ids[0]});
@@ -690,7 +716,7 @@ function unique(ids, monk_prefix) {
     SVG('#tech_' + formatId(UNIQUE_TECH_2) + '_overlay').data({'name': data.strings[data.data.techs[ids[3]].LanguageNameId], 'id':'tech_'+ids[3]});
     SVG('#unit_' + formatId(UNIQUE_UNIT) + '_img').load('img/Units/' + formatId(ids[0]) + '.png');
     SVG('#unit_' + formatId(ELITE_UNIQUE_UNIT) + '_img').load('img/Units/' + formatId(ids[1]) + '.png');
-    SVG('#unit_' + formatId(MONK) + '_img').load('img/Units/' + monk_prefix + '125.png');
+    SVG('#unit_' + formatId(MONK) + '_img').load('img/Units/' + '125' + monk_suffix + '.png');
 }
 
 function getName(id, itemtype) {
@@ -732,6 +758,8 @@ function getDefaultTree() {
     archerylane.rows.castle_1.push(unit(CAVALRY_ARCHER));
     archerylane.rows.castle_1.push(unit(ELEPHANT_ARCHER));
     archerylane.rows.castle_1.push(uniqueunit(GENITOUR));
+    archerylane.rows.castle_1.push(uniqueunit(GRENADIER));
+    archerylane.rows.castle_1.push(uniqueunit(XIANBEI_RAIDER));
     archerylane.rows.castle_1.push(tech(THUMB_RING));
     archerylane.rows.imperial_1.push(unit(ARBALESTER));
     archerylane.rows.imperial_1.push(uniqueunit(IMPERIAL_SKIRMISHER));
@@ -747,22 +775,24 @@ function getDefaultTree() {
     barrackslane.rows.dark_1.push(building(BARRACKS));
     barrackslane.rows.dark_2.push(unit(MILITIA));
     barrackslane.rows.feudal_1.push(unit(MAN_AT_ARMS));
-    barrackslane.rows.feudal_1.push(tech(SUPPLIES));
+    barrackslane.rows.feudal_1.push(tech(ARSON));
     barrackslane.rows.feudal_1.push(unit(SPEARMAN));
     barrackslane.rows.feudal_1.push(unit(EAGLE_SCOUT));
+    barrackslane.rows.feudal_1.push(uniqueunit(FLEMISHPIKEMAN));
     barrackslane.rows.castle_1.push(unit(LONG_SWORDSMAN));
     barrackslane.rows.castle_1.push(tech(GAMBESONS));
     barrackslane.rows.castle_1.push(unit(PIKEMAN));
     barrackslane.rows.castle_1.push(unit(EAGLE_WARRIOR));
+    barrackslane.rows.castle_1.push(unit(FIRE_LANCER));
+    barrackslane.rows.castle_1.push(uniqueunit(JIAN_SWORDSMAN));
     barrackslane.rows.castle_1.push(tech(SQUIRES));
-    barrackslane.rows.castle_1.push(tech(ARSON));
     barrackslane.rows.imperial_1.push(unit(TWO_HANDED_SWORDSMAN));
     barrackslane.rows.imperial_1.push(uniqueunit(LEGIONARY));
     barrackslane.rows.imperial_2.push(unit(CHAMPION));
     barrackslane.rows.imperial_1.push(unit(HALBERDIER));
     barrackslane.rows.imperial_1.push(unit(ELITE_EAGLE_WARRIOR));
+    barrackslane.rows.imperial_1.push(unit(ELITE_FIRE_LANCER));
     barrackslane.rows.imperial_1.push(uniqueunit(CONDOTTIERO));
-    barrackslane.rows.imperial_1.push(uniqueunit(FLEMISHPIKEMAN));
     tree.lanes.push(barrackslane);
 
 
@@ -773,21 +803,24 @@ function getDefaultTree() {
     stablelane.rows.feudal_2.push(uniqueunit(CAMEL_SCOUT));
     stablelane.rows.castle_1.push(unit(LIGHT_CAVALRY));
     stablelane.rows.castle_1.push(uniqueunit(SHRIVAMSHA_RIDER));
-    stablelane.rows.castle_1.push(unit(CAMEL_RIDER));
     stablelane.rows.castle_1.push(unit(KNIGHT));
-    stablelane.rows.castle_1.push(unit(BATTLE_ELEPHANT));
     stablelane.rows.castle_1.push(unit(STEPPE_LANCER));
+    stablelane.rows.castle_1.push(unit(CAMEL_RIDER));
+    stablelane.rows.castle_1.push(unit(BATTLE_ELEPHANT));
+    stablelane.rows.castle_1.push(unit(HEI_GUANG_CAVALRY));
     stablelane.rows.castle_1.push(uniqueunit(XOLOTL_WARRIOR));
     stablelane.rows.castle_1.push(tech(HUSBANDRY));
     stablelane.rows.imperial_1.push(unit(HUSSAR));
     stablelane.rows.imperial_1.push(uniqueunit(ELITE_SHRIVAMSHA_RIDER));
-    stablelane.rows.imperial_1.push(unit(HEAVY_CAMEL_RIDER));
     stablelane.rows.imperial_1.push(unit(CAVALIER));
-    stablelane.rows.imperial_1.push(unit(ELITE_BATTLE_ELEPHANT));
     stablelane.rows.imperial_1.push(unit(ELITE_STEPPE_LANCER));
+    stablelane.rows.imperial_1.push(unit(HEAVY_CAMEL_RIDER));
+    stablelane.rows.imperial_1.push(unit(ELITE_BATTLE_ELEPHANT));
+    stablelane.rows.imperial_1.push(unit(HEAVY_HEI_GUANG_CAVALRY));
     stablelane.rows.imperial_2.push(uniqueunit(WINGED_HUSSAR));
     stablelane.rows.imperial_2.push(uniqueunit(IMPERIAL_CAMEL_RIDER));
     stablelane.rows.imperial_2.push(unit(PALADIN));
+    stablelane.rows.imperial_2.push(uniqueunit(SAVAR));
     tree.lanes.push(stablelane);
 
 
@@ -796,15 +829,21 @@ function getDefaultTree() {
     siegeworkshoplane.rows.castle_2.push(unit(BATTERING_RAM));
     siegeworkshoplane.rows.castle_2.push(unit(ARMORED_ELEPHANT));
     siegeworkshoplane.rows.castle_2.push(unit(MANGONEL));
+    siegeworkshoplane.rows.castle_2.push(unit(ROCKET_CART));
     siegeworkshoplane.rows.castle_2.push(unit(SCORPION));
     siegeworkshoplane.rows.castle_2.push(unit(SIEGE_TOWER));
+    siegeworkshoplane.rows.castle_2.push(uniqueunit(WAR_CHARIOT));
     siegeworkshoplane.rows.imperial_1.push(unit(CAPPED_RAM));
     siegeworkshoplane.rows.imperial_1.push(unit(SIEGE_ELEPHANT));
     siegeworkshoplane.rows.imperial_1.push(unit(ONAGER));
+    siegeworkshoplane.rows.imperial_1.push(unit(HEAVY_ROCKET_CART));
     siegeworkshoplane.rows.imperial_1.push(unit(HEAVY_SCORPION));
     siegeworkshoplane.rows.imperial_1.push(unit(BOMBARD_CANNON));
     siegeworkshoplane.rows.imperial_2.push(unit(SIEGE_RAM));
+    siegeworkshoplane.rows.imperial_2.push(uniqueunit(FLAMING_CAMEL));
     siegeworkshoplane.rows.imperial_2.push(unit(SIEGE_ONAGER));
+    siegeworkshoplane.rows.imperial_2.push(uniqueunit(MOUNTED_TREBUCHET));
+    siegeworkshoplane.rows.imperial_2.push(uniqueunit(TRACTION_TREBUCHET));
     siegeworkshoplane.rows.imperial_2.push(uniqueunit(HOUFNICE));
     tree.lanes.push(siegeworkshoplane);
 
@@ -855,7 +894,9 @@ function getDefaultTree() {
     docklane.rows.imperial_1.push(uniqueunit(THIRISADAI));
     docklane.rows.imperial_1.push(tech(DRY_DOCK));
     docklane.rows.imperial_1.push(tech(SHIPWRIGHT));
+    docklane.rows.imperial_2.push(uniqueunit(DRAGON_FIRE_SHIP));
     docklane.rows.imperial_2.push(unit(ELITE_CANNON_GALLEON));
+    docklane.rows.imperial_2.push(uniqueunit(LOU_CHUAN));
     tree.lanes.push(docklane);
 
 
@@ -908,12 +949,14 @@ function getDefaultTree() {
     castlelane.rows.castle_2.push(tech(UNIQUE_TECH_1));
     castlelane.rows.imperial_1.push(new Caret(TYPES.UNIQUEUNIT, ELITE_UNIQUE_UNIT, ELITE_UNIQUE_UNIT));
     castlelane.rows.imperial_1.push(unit(TREBUCHET));
-    castlelane.rows.imperial_1.push(uniqueunit(FLAMING_CAMEL));
     castlelane.rows.imperial_1.push(tech(UNIQUE_TECH_2));
     castlelane.rows.imperial_1.push(tech(HOARDINGS));
     castlelane.rows.imperial_1.push(tech(SAPPERS));
     castlelane.rows.imperial_1.push(tech(CONSCRIPTION));
     castlelane.rows.imperial_1.push(tech(SPIES_TREASON));
+    castlelane.rows.imperial_2.push(uniqueunit(LIU_BEI));
+    castlelane.rows.imperial_2.push(uniqueunit(CAO_CAO));
+    castlelane.rows.imperial_2.push(uniqueunit(SUN_JIAN));
     tree.lanes.push(castlelane);
 
 
@@ -938,17 +981,23 @@ function getDefaultTree() {
     monasterylane.rows.castle_1.push(building(MONASTERY));
     monasterylane.rows.castle_2.push(unit(MONK));
     monasterylane.rows.castle_2.push(uniqueunit(MISSIONARY));
+    monasterylane.rows.castle_2.push(tech(DEVOTION));
     monasterylane.rows.castle_2.push(tech(REDEMPTION));
     monasterylane.rows.castle_2.push(tech(ATONEMENT));
     monasterylane.rows.castle_2.push(tech(HERBAL_MEDICINE));
     monasterylane.rows.castle_2.push(tech(HERESY));
     monasterylane.rows.castle_2.push(tech(SANCTITY));
     monasterylane.rows.castle_2.push(tech(FERVOR));
-    monasterylane.rows.imperial_1.push(tech(FAITH));
     monasterylane.rows.imperial_1.push(tech(ILLUMINATION));
     monasterylane.rows.imperial_1.push(tech(BLOCK_PRINTING));
+    monasterylane.rows.imperial_1.push(tech(FAITH));
     monasterylane.rows.imperial_1.push(tech(THEOCRACY));
     tree.lanes.push(monasterylane);
+
+    let fortifiedchurchlane = new Lane();
+    fortifiedchurchlane.rows.castle_1.push(building(FORTIFIED_CHURCH));
+    fortifiedchurchlane.rows.castle_2.push(uniqueunit(WARRIOR_PRIEST));
+    tree.lanes.push(fortifiedchurchlane);
 
 
     let houselane = new Lane();
@@ -996,6 +1045,10 @@ function getDefaultTree() {
     miningcamplane.rows.castle_1.push(tech(STONE_SHAFT_MINING));
     tree.lanes.push(miningcamplane);
 
+    let mulecartlane = new Lane();
+    mulecartlane.rows.dark_1.push(building(MULE_CART));
+    tree.lanes.push(mulecartlane);
+
 
     let lumbercamplane = new Lane();
     lumbercamplane.rows.dark_1.push(building(LUMBER_CAMP));
@@ -1024,9 +1077,17 @@ function getDefaultTree() {
     let milllane = new Lane();
     milllane.rows.dark_1.push(building(MILL));
     milllane.rows.feudal_1.push(tech(HORSE_COLLAR));
+    milllane.rows.feudal_1.push(tech(DOMESTICATION));
     milllane.rows.castle_1.push(tech(HEAVY_PLOW));
+    milllane.rows.castle_1.push(tech(PASTORALISM));
     milllane.rows.imperial_1.push(tech(CROP_ROTATION));
+    milllane.rows.imperial_1.push(tech(TRANSHUMANCE));
     tree.lanes.push(milllane);
+
+
+    let pasturelane = new Lane();
+    pasturelane.rows.dark_1.push(building(PASTURE));
+    tree.lanes.push(pasturelane);
 
 
     tree.updatePositions();
@@ -1074,8 +1135,9 @@ function getConnections() {
         [b(BARRACKS), u(EAGLE_SCOUT)],
         [u(EAGLE_SCOUT), u(EAGLE_WARRIOR)],
         [u(EAGLE_WARRIOR), u(ELITE_EAGLE_WARRIOR)],
-        [b(BARRACKS), t(SUPPLIES)],
-        [t(SUPPLIES), t(GAMBESONS)],
+        [b(BARRACKS), u(FLEMISHPIKEMAN)],
+        [b(BARRACKS), u(JIAN_SWORDSMAN)],
+        [u(FIRE_LANCER), u(ELITE_FIRE_LANCER)],
         [b(BARRACKS), t(SQUIRES)],
         [b(BARRACKS), t(ARSON)],
         [b(STABLE), u(SCOUT_CAVALRY)],
@@ -1085,16 +1147,20 @@ function getConnections() {
         [u(SHRIVAMSHA_RIDER), u(ELITE_SHRIVAMSHA_RIDER)],
         [b(STABLE), u(CAMEL_SCOUT)],
         [b(STABLE), t(BLOODLINES)],
-        [b(STABLE), u(CAMEL_RIDER)],
+        // [b(STABLE), u(CAMEL_RIDER)],
+        [u(CAMEL_SCOUT), u(CAMEL_RIDER)],
         [u(CAMEL_RIDER), u(HEAVY_CAMEL_RIDER)],
         [b(STABLE), u(BATTLE_ELEPHANT)],
         [u(BATTLE_ELEPHANT), u(ELITE_BATTLE_ELEPHANT)],
+        [b(STABLE), u(HEI_GUANG_CAVALRY)],
+        [u(HEI_GUANG_CAVALRY), u(HEAVY_HEI_GUANG_CAVALRY)],
         [b(STABLE), u(STEPPE_LANCER)],
         [u(STEPPE_LANCER), u(ELITE_STEPPE_LANCER)],
         [b(STABLE), u(XOLOTL_WARRIOR)],
         [b(STABLE), t(HUSBANDRY)],
         [b(STABLE), u(KNIGHT)],
         [u(KNIGHT), u(CAVALIER)],
+        [u(CAVALIER), u(SAVAR)],
         [u(CAVALIER), u(PALADIN)],
         [b(DOCK), u(FISHING_SHIP)],
         [b(DOCK), u(TRANSPORT_SHIP)],
@@ -1111,17 +1177,28 @@ function getConnections() {
         [b(DOCK), b(FISH_TRAP)],
         [u(FIRE_GALLEY), u(FIRE_SHIP)],
         [u(FIRE_SHIP), u(FAST_FIRE_SHIP)],
+        [u(FAST_FIRE_SHIP), u(DRAGON_FIRE_SHIP)],
         [u(CANNON_GALLEON), u(ELITE_CANNON_GALLEON)],
         [b(WATCH_TOWER), b(GUARD_TOWER)],
         [b(GUARD_TOWER), b(KEEP)],
         [b(STONE_WALL), b(FORTIFIED_WALL)],
         [b(MONASTERY), u(MONK)],
+        [b(MONASTERY), t(DEVOTION)],
         [b(MONASTERY), t(REDEMPTION)],
         [b(MONASTERY), t(ATONEMENT)],
         [b(MONASTERY), t(HERBAL_MEDICINE)],
         [b(MONASTERY), t(HERESY)],
         [b(MONASTERY), t(SANCTITY)],
         [b(MONASTERY), t(FERVOR)],
+        [t(DEVOTION), t(FAITH)],
+        [b(FORTIFIED_CHURCH), u(MONK)],
+        [b(FORTIFIED_CHURCH), u(WARRIOR_PRIEST)],
+        [b(FORTIFIED_CHURCH), t(REDEMPTION)],
+        [b(FORTIFIED_CHURCH), t(ATONEMENT)],
+        [b(FORTIFIED_CHURCH), t(HERBAL_MEDICINE)],
+        [b(FORTIFIED_CHURCH), t(HERESY)],
+        [b(FORTIFIED_CHURCH), t(SANCTITY)],
+        [b(FORTIFIED_CHURCH), t(FERVOR)],
         [b(CASTLE), u(UNIQUE_UNIT)],
         [u(UNIQUE_UNIT), u(ELITE_UNIQUE_UNIT)],
         [b(CASTLE), u(PETARD)],
@@ -1153,9 +1230,12 @@ function getConnections() {
         [u(CAPPED_RAM), u(SIEGE_RAM)],
         [b(SIEGE_WORKSHOP), u(ARMORED_ELEPHANT)],
         [u(ARMORED_ELEPHANT), u(SIEGE_ELEPHANT)],
+        [b(SIEGE_WORKSHOP), u(ROCKET_CART)],
+        [u(ROCKET_CART), u(HEAVY_ROCKET_CART)],
         [b(SIEGE_WORKSHOP), u(SCORPION)],
         [u(SCORPION), u(HEAVY_SCORPION)],
         [b(SIEGE_WORKSHOP), u(SIEGE_TOWER)],
+        [b(SIEGE_WORKSHOP), u(WAR_CHARIOT)],
         [u(BOMBARD_CANNON), u(HOUFNICE)],
         [b(BLACKSMITH), b(SIEGE_WORKSHOP)],
         [b(BLACKSMITH), t(PADDED_ARCHER_ARMOR)],
@@ -1187,6 +1267,9 @@ function getConnections() {
         [t(STONE_MINING), t(STONE_SHAFT_MINING)],
         [b(MINING_CAMP), t(GOLD_MINING)],
         [t(GOLD_MINING), t(GOLD_SHAFT_MINING)],
+        [b(MULE_CART), t(STONE_MINING)],
+        [b(MULE_CART), t(GOLD_MINING)],
+        [b(MULE_CART), t(DOUBLE_BIT_AXE)],
         [b(LUMBER_CAMP), t(DOUBLE_BIT_AXE)],
         [t(DOUBLE_BIT_AXE), t(BOW_SAW)],
         [t(BOW_SAW), t(TWO_MAN_SAW)],
@@ -1199,6 +1282,9 @@ function getConnections() {
         [b(FOLWARK), t(HORSE_COLLAR)],
         [t(HORSE_COLLAR), t(HEAVY_PLOW)],
         [t(HEAVY_PLOW), t(CROP_ROTATION)],
+        [b(MILL), t(DOMESTICATION)],
+        [t(DOMESTICATION), t(PASTORALISM)],
+        [t(PASTORALISM), t(TRANSHUMANCE)],
         [b(MILL), b(FARM)],
         [b(FOLWARK), b(FARM)],
         [u(GENITOUR), u(ELITE_GENITOUR)],
@@ -1212,6 +1298,8 @@ function getConnections() {
         [b(DOCK), u(TURTLE_SHIP)],
         [b(ARCHERY_RANGE), u(SLINGER)],
         [b(ARCHERY_RANGE), u(GENITOUR)],
+        [b(ARCHERY_RANGE), u(GRENADIER)],
+        [b(ARCHERY_RANGE), u(XIANBEI_RAIDER)],
         [b(DOCK), u(LONGBOAT)],
         [b(DOCK), u(THIRISADAI)],
     ];

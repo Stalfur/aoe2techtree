@@ -76,6 +76,13 @@ CIV_NAMES = {
     "Dravidians": "10310",
     "Gurjaras": "10312",
     "Romans": "10313",
+    "Armenians": "10314",
+    "Georgians": "10315",
+    "Shu": "10319",
+    "Wu": "10320",
+    "Wei": "10321",
+    "Jurchens": "10322",
+    "Khitans": "10323",
 }
 
 ROR_CIV_NAMES = {
@@ -142,6 +149,13 @@ CIV_HELPTEXTS = {
     "Dravidians": "120189",
     "Gurjaras": "120191",
     "Romans": "120192",
+    "Armenians": "120193",
+    "Georgians": "120194",
+    "Shu": "120198",
+    "Wu": "120199",
+    "Wei": "120200",
+    "Jurchens": "120201",
+    "Khitans": "120202",
 }
 
 ROR_CIV_HELPTEXTS = {
@@ -210,6 +224,8 @@ KONNIK_INF = 1252
 EKONNIK_INF = 1253
 RATHA = 1738
 ERATHA = 1740
+WARCHAR_FF = 1962
+WARCHAR_B = 1980
 CARTOGRAPHY = 19
 TRACKING = 90
 
@@ -250,6 +266,7 @@ def gather_language_data(resourcesdir, data, language):
     key_value[21105] = key_value[5420]  # Fix Elite Ratha name
     key_value[42105] = key_value[26420]  # Fix Elite Ratha description
     key_value[42097] = key_value[26420]  # Fix Elite Ratha (melee) description
+    key_value[42198] = key_value[26364]  # Fix War Chariot (Barrage) description
 
     key_value_filtered = {}
     for datatype in ("buildings", "units", "techs"):
@@ -322,6 +339,10 @@ def parse_line(key_value, line):
         match = re.search('".+"', line)
         if match:
             text = match.group(0)[1:-1]
+            if len(re.findall(r'<i>', text)) == 1:
+                text = re.sub(r'<i>', r'', text)
+            if len(re.findall(r'<GREY>', text)) == 1:
+                text = re.sub(r'<GREY>', r'', text)
             text = re.sub(r'<(.+?)>', r'‹\1›', text)
             text = re.sub(r'‹b›(.+?)‹b›', r'<b>\1</b>', text)
             text = re.sub(r'‹i›(.+?)‹i›', r'<i>\1</i>', text)
@@ -335,14 +356,14 @@ def parse_line(key_value, line):
 
 
 def gather_data(content, civs, unit_upgrades):
-    building_ids = set.union({b for c in civs.values() for b in c['buildings']}, \
-        {RTWC2})
-    unit_ids = set.union({u for c in civs.values() for u in c['units']}, \
-        {c['unique']['castleAgeUniqueUnit'] for c in civs.values()}, \
+    building_ids = set.union({b['id'] for c in civs.values() for b in c['buildings']}, \
+                             {RTWC2})
+    unit_ids = set.union({u['id'] for c in civs.values() for u in c['units']}, \
+                         {c['unique']['castleAgeUniqueUnit'] for c in civs.values()}, \
         {c['unique']['imperialAgeUniqueUnit'] for c in civs.values()}, \
-        {PTREB, KONNIK_INF, EKONNIK_INF, RATHA, ERATHA})
-    tech_ids = set.union({t for c in civs.values() for t in c['techs']}, \
-        {c['unique']['castleAgeUniqueTech'] for c in civs.values()}, \
+        {PTREB, KONNIK_INF, EKONNIK_INF, RATHA, ERATHA, WARCHAR_FF, WARCHAR_B})
+    tech_ids = set.union({t['id'] for c in civs.values() for t in c['techs']}, \
+                         {c['unique']['castleAgeUniqueTech'] for c in civs.values()}, \
         {c['unique']['imperialAgeUniqueTech'] for c in civs.values()}, \
         {CARTOGRAPHY, TRACKING})
     gaia = content["Civs"][0]
@@ -361,7 +382,7 @@ def gather_data(content, civs, unit_upgrades):
 
     for unit_id, upgrade_id in unit_upgrades.items():
         tech = content["Techs"][upgrade_id]
-        add_unit_upgrade(unit_id, tech_id, tech, data)
+        add_unit_upgrade(unit_id, upgrade_id, tech, data)
 
     data["units"][83]['LanguageNameId'] = 5606  # Villager
     data["units"][128]['LanguageNameId'] = 19052  # Trade Cart
@@ -372,10 +393,10 @@ def gather_data(content, civs, unit_upgrades):
 
 def ror_gather_data(content, civs, unit_upgrades):
     ages = list(ROR_AGE_NAMES.keys())[1:]
-    building_ids = {b for c in civs.values() for b in c['buildings']}
-    unit_ids = {u for c in civs.values() for u in c['units']}
+    building_ids = {b['id'] for c in civs.values() for b in c['buildings']}
+    unit_ids = {u['id'] for c in civs.values() for u in c['units']}
     tech_ids = set.union(
-        {t for c in civs.values() for t in c['techs']},
+        {t['id'] for c in civs.values() for t in c['techs']},
         {t for t, tech in enumerate(content['Techs']) if tech['Name'] in ages},
         {t for t, tech in enumerate(content['Techs']) if 'Wall' in tech['Name']},
         {t for t, tech in enumerate(content['Techs']) if 'Tower' in tech['Name']},
@@ -396,7 +417,7 @@ def ror_gather_data(content, civs, unit_upgrades):
 
     for unit_id, upgrade_id in unit_upgrades.items():
         tech = content["Techs"][upgrade_id]
-        add_unit_upgrade(unit_id, tech_id, tech, data)
+        add_unit_upgrade(unit_id, upgrade_id, tech, data)
 
     return data
 
@@ -559,22 +580,27 @@ def gather_civs(techtrees):
     civs = {}
     unit_upgrades = {}
     for civ in techtrees['civs']:
-        current_civ = {'buildings': [], 'units': [], 'techs': [], 'unique': {}, 'monkPrefix': ''}
+        if civ['civ_id'] in ('ACHAEMENIDS','ATHENIANS','SPARTANS'):
+            continue
+        current_civ = {'buildings': [], 'units': [], 'techs': [], 'unique': {}, 'monkSuffix': ''}
         for building in civ['civ_techs_buildings']:
             if building['Node Status'] != 'NotAvailable':
-                current_civ['buildings'].append(building['Node ID'])
+                current_civ['buildings'].append({'id': building['Node ID'], 'age': building['Age ID']})
         for unit in civ['civ_techs_units']:
-            if unit['Name'] == 'Monk' and unit['Picture Index'] == 131:
-                current_civ['monkPrefix'] = 'meso_'
-            if unit['Node Type'] in ('Unit', 'UniqueUnit', 'UnitUpgrade') and unit['Node Status'] != 'NotAvailable':
+            if unit['Name'] == 'Monk':
+                current_civ['monkSuffix'] = f"_{unit['Picture Index']}"
+            if unit['Node Type'] in ('Unit', 'UniqueUnit', 'UnitUpgrade', 'RegionalUnit') and unit['Node Status'] != 'NotAvailable':
                 if is_castle_age_unique_unit(unit):
                     current_civ['unique']['castleAgeUniqueUnit'] = unit['Node ID']
                 elif is_imperial_age_unique_unit(unit):
                     current_civ['unique']['imperialAgeUniqueUnit'] = unit['Node ID']
                 elif unit['Node ID'] not in unit_excludelist:
-                    current_civ['units'].append(unit['Node ID'])
+                    current_civ['units'].append({'id': unit['Node ID'], 'age': unit['Age ID']})
                 if unit['Trigger Tech ID'] > -1:
                     unit_upgrades[unit['Node ID']] = unit['Trigger Tech ID']
+            if unit['Node Type'] in ('BuildingNonTech',):
+                current_civ['buildings'].append({'id': unit['Node ID'], 'age': unit['Age ID']})
+
 
         for tech in civ['civ_techs_units']:
             if tech['Node Type'] == 'Research' and tech['Node Status'] != 'NotAvailable':
@@ -583,11 +609,11 @@ def gather_civs(techtrees):
                 elif is_imperial_age_unique_tech(tech):
                     current_civ['unique']['imperialAgeUniqueTech'] = tech['Node ID']
                 else:
-                    current_civ['techs'].append(tech['Node ID'])
+                    current_civ['techs'].append({'id': tech['Node ID'], 'age': tech['Age ID']})
 
-        current_civ['buildings'] = sorted(current_civ['buildings'])
-        current_civ['units'] = sorted(current_civ['units'])
-        current_civ['techs'] = sorted(current_civ['techs'])
+        current_civ['buildings'] = sorted(current_civ['buildings'], key=lambda x: x['id'])
+        current_civ['units'] = sorted(current_civ['units'], key=lambda x: x['id'])
+        current_civ['techs'] = sorted(current_civ['techs'], key=lambda x: x['id'])
 
         civname = civ['civ_id'].capitalize()
         if civname == 'Magyar':
@@ -598,17 +624,20 @@ def gather_civs(techtrees):
 
     XOLOTL_WARRIOR = 1570
     for civname in ('Aztecs', 'Mayans', 'Incas'):
-        civs[civname]['units'].append(XOLOTL_WARRIOR)
-        civs[civname]['units'] = sorted(civs[civname]['units'])
+        civs[civname]['units'].append({'id': XOLOTL_WARRIOR, 'age': 3})
+        civs[civname]['units'] = sorted(civs[civname]['units'], key=lambda x: x['id'])
     HARBOR = 1189
-    civs['Malay']['buildings'].append(HARBOR)
-    civs['Malay']['buildings'] = sorted(civs['Malay']['buildings'])
+    civs['Malay']['buildings'].append({'id': HARBOR, 'age': 3})
+    civs['Malay']['buildings'] = sorted(civs['Malay']['buildings'], key=lambda x: x['id'])
 
     DEMOLITION_SHIP = 527
     FIRE_SHIP = 529
     WAR_GALLEY_UPGRADE = 34
     unit_upgrades[DEMOLITION_SHIP] = WAR_GALLEY_UPGRADE
     unit_upgrades[FIRE_SHIP] = WAR_GALLEY_UPGRADE
+
+    assert civs['Wu']['unique']['imperialAgeUniqueTech'] == 1080
+    civs['Wu']['unique']['imperialAgeUniqueTech'] = 1081
 
     return civs, unit_upgrades
 
@@ -642,17 +671,17 @@ def ror_gather_civs(techtrees):
         current_civ = {'buildings': [], 'units': [], 'techs': []}
         for building in civ['civ_techs_buildings']:
             if building['Node Status'] != 'NotAvailable':
-                current_civ['buildings'].append(building['Node ID'])
+                current_civ['buildings'].append({'id': building['Node ID'], 'age': building['Age ID']})
         for unit in filter(ror_is_unit, civ['civ_techs_units']):
-            current_civ['units'].append(unit['Node ID'])
+            current_civ['units'].append({'id': unit['Node ID'], 'age': unit['Age ID']})
             if unit['Trigger Tech ID'] > -1:
                 unit_upgrades[unit['Node ID']] = unit['Trigger Tech ID']
         for tech in filter(ror_is_tech, civ['civ_techs_units']):
-            current_civ['techs'].append(tech['Node ID'])
+            current_civ['techs'].append({'id': tech['Node ID'], 'age': tech['Age ID']})
 
-        current_civ['buildings'] = sorted(current_civ['buildings'])
-        current_civ['units'] = sorted(current_civ['units'])
-        current_civ['techs'] = sorted(current_civ['techs'])
+        current_civ['buildings'] = sorted(current_civ['buildings'], key=lambda x: x['id'])
+        current_civ['units'] = sorted(current_civ['units'], key=lambda x: x['id'])
+        current_civ['techs'] = sorted(current_civ['techs'], key=lambda x: x['id'])
 
         civname = civ['civ_id'].capitalize()
         if civname == 'Carthagians':
@@ -667,23 +696,23 @@ def ror_gather_civs(techtrees):
 
 
 def ror_update_civ_techs(civs, data):
-    age_ups = [t['ID'] for t in data['techs'].values()
+    age_ups = [{'id':t['ID'], 'age': -1} for t in data['techs'].values()
                if t['internal_name'].endswith('Age')]
     wall_tower_techs = {
-        72: 11,  # Small Wall
-        117: 13,  # Medium Wall
-        155: 14,  # Fortified Wall
-        79: 16,  # Watch Tower
-        234: 12,  # Sentry Tower
-        235: 15,  # Guard Tower
-        236: 2,  # Ballista Tower
+        72: {'id':11, 'age': 2},  # Small Wall
+        117: {'id':13, 'age': 3},  # Medium Wall
+        155: {'id':14, 'age': 4},  # Fortified Wall
+        79: {'id':16, 'age': 2},  # Watch Tower
+        234: {'id':12, 'age': 3},  # Sentry Tower
+        235: {'id':15, 'age': 4},  # Guard Tower
+        236: {'id':2, 'age': 4},  # Ballista Tower
     }
     for civ in civs.values():
         civ['techs'].extend(age_ups)
         for building_id, tech_id in wall_tower_techs.items():
             if building_id in civ['buildings']:
                 civ['techs'].append(tech_id)
-        civ['techs'].sort()
+        civ['techs'].sort(key=lambda x: x['id'])
 
 
 def ror_write_datafile(data, techtrees, outputdir):
@@ -716,7 +745,9 @@ def ror_write_language_files(args, data, outputdir):
 
 def process_ror(args, outputdir):
     techtreesfile = Path(args.programdir) / 'modes' / 'Pompeii' / 'resources' / '_common' / 'dat' / 'civTechTrees.json'
-    techtrees = json.loads(techtreesfile.read_text())
+    ttfcontent = techtreesfile.read_text()
+    ttfcontent = re.sub(r',\n( +)\]', r'\n\1]', ttfcontent)
+    techtrees = json.loads(ttfcontent)
     civs, unit_upgrades = ror_gather_civs(techtrees)
     datafile = Path(args.rordatafile)
     content = json.loads(datafile.read_text())
@@ -728,7 +759,10 @@ def process_ror(args, outputdir):
 
 def process_aoe2(args, outputdir):
     techtreesfile = Path(args.programdir) / 'resources' / '_common' / 'dat' / 'civTechTrees.json'
-    techtrees = json.loads(techtreesfile.read_text())
+    ttfcontent = techtreesfile.read_text()
+    ttfcontent = re.sub(r',\n( +)\]', r'\n\1]', ttfcontent)
+    Path('/tmp/test.json').write_text(ttfcontent)
+    techtrees = json.loads(ttfcontent)
     civs, unit_upgrades = gather_civs(techtrees)
     datafile = Path(args.datafile)
     content = json.loads(datafile.read_text())

@@ -392,17 +392,17 @@ function checkIdUnique(tree) {
 }
 
 function enable(buildings, units, techs) {
-    for (let name of buildings) {
-        SVG('#building_' + formatId(name) + '_x').attr({'opacity': 0});
-        SVG('#building_' + formatId(name) + '_disabled_gray').attr({'opacity': 0});
+    for (let item of buildings) {
+        SVG('#building_' + formatId(item.id) + '_x').attr({'opacity': 0});
+        SVG('#building_' + formatId(item.id) + '_disabled_gray').attr({'opacity': 0});
     }
-    for (let name of units) {
-        SVG('#unit_' + formatId(name) + '_x').attr({'opacity': 0});
-        SVG('#unit_' + formatId(name) + '_disabled_gray').attr({'opacity': 0});
+    for (let item of units) {
+        SVG('#unit_' + formatId(item.id) + '_x').attr({'opacity': 0});
+        SVG('#unit_' + formatId(item.id) + '_disabled_gray').attr({'opacity': 0});
     }
-    for (let name of techs) {
-        SVG('#tech_' + formatId(name) + '_x').attr({'opacity': 0});
-        SVG('#tech_' + formatId(name) + '_disabled_gray').attr({'opacity': 0});
+    for (let item of techs) {
+        SVG('#tech_' + formatId(item.id) + '_x').attr({'opacity': 0});
+        SVG('#tech_' + formatId(item.id) + '_disabled_gray').attr({'opacity': 0});
     }
 }
 
@@ -637,13 +637,12 @@ function getDefaultTree() {
 	governmentcenterlane.rows.bronze_2.push(tech(WRITING));
 	governmentcenterlane.rows.bronze_2.push(tech(ARCHITECTURE));
 	governmentcenterlane.rows.bronze_2.push(tech(LOGISTICS));
-	governmentcenterlane.rows.bronze_2.push(tech(CITY_WATCH));
+	governmentcenterlane.rows.bronze_2.push(tech(URBANIZATION));
 	governmentcenterlane.rows.iron_1.push(tech(ARISTOCRACY));
 	governmentcenterlane.rows.iron_1.push(tech(BALLISTICS));
 	governmentcenterlane.rows.iron_1.push(tech(ALCHEMY));
 	governmentcenterlane.rows.iron_1.push(tech(ENGINEERING));
 	governmentcenterlane.rows.iron_1.push(tech(CONSCRIPTION));
-	governmentcenterlane.rows.iron_2.push(tech(URBANIZATION));
 	tree.lanes.push(governmentcenterlane);
 
 	let newtowncenterlane = new Lane()
@@ -675,6 +674,7 @@ function getDefaultTree() {
     towncenterlane.rows.stone_1.push(building(TOWN_CENTER));
     towncenterlane.rows.stone_2.push(unit(VILLAGER));
     towncenterlane.rows.stone_2.push(tech(TOOL_AGE));
+    towncenterlane.rows.tool_1.push(tech(CITY_WATCH));
     towncenterlane.rows.tool_1.push(tech(BRONZE_AGE));
     towncenterlane.rows.bronze_1.push(tech(IRON_AGE));
     tree.lanes.push(towncenterlane);
@@ -811,14 +811,13 @@ function getConnections() {
 		[b(GOVERNMENT_CENTER), t(WRITING)],
 		[b(GOVERNMENT_CENTER), t(ARCHITECTURE)],
 		[b(GOVERNMENT_CENTER), t(LOGISTICS)],
-		[b(GOVERNMENT_CENTER), t(CITY_WATCH)],
+		[b(GOVERNMENT_CENTER), t(URBANIZATION)],
 		[b(GOVERNMENT_CENTER), b(TOWN_CENTER_2)],
 		// [b(GOVERNMENT_CENTER), t(ARISTOCRACY)],
 		// [b(GOVERNMENT_CENTER), t(BALLISTICS)],
 		// [b(GOVERNMENT_CENTER), t(ALCHEMY)],
 		// [b(GOVERNMENT_CENTER), t(ENGINEERING)],
 		// [b(GOVERNMENT_CENTER), t(CONSCRIPTION)],
-		// [b(GOVERNMENT_CENTER), t(URBANIZATION)],
 		[b(TEMPLE), t(ASTROLOGY)],
 		[b(TEMPLE), t(MYSTICISM)],
 		[b(TEMPLE), t(POLYTHEISM)],
